@@ -538,6 +538,40 @@ class Arena{
         return $list;
     }
 
+    /**
+    * @return Player
+    */
+    public function getClosetToMid(): Player {
+        $closest = [];
+        $pos1 = [];
+        $pos1["x"] = $this->hill[0][0];
+        $pos1["z"] = $this->hill[0][2];
+        $pos2 = [];
+        $pos2["x"] = $this->hill[1][0];
+        $pos2["z"] = $this->hill[1][2];
+	$x1 = max($pos2["x"],$pos1["x"]);
+	$x2 = min($pos2["x"],$pos1["x"]);
+	$z1 = max($pos2["z"],$pos1["z"]);
+	$z2 = min($pos2["z"],$pos1["z"]);
+        $mid = [];
+	$mid["x"] = ($x1 * ($x1 < 0 ? -1 : 1)) - ($x2 * ($x2 < 0 ? -1 : 1));
+	$mid["z"] = ($z1 * ($z1 < 0 ? -1 : 1)) - ($z2 * ($z2 < 0 ? -1 : 1));
+        foreach($this->playersInBox() as $player) {
+            $px = $player->getX() * ($player->getX() < 0 ? -1 : 1);
+	    $pz = $player->getZ() * ($player->getZ() < 0 ? -1 : 1);
+            if(!is_empty($closest)) {
+                $playerDistance = sqrt(($px - $mid["x"]) ** 2 + ($pz - $mid["z"]) ** 2);
+                $lastPlayerDistance = sqrt(($closest[0] - $mid["x"]) ** 2 + ($closest[1] - $mid["x"]) ** 2);
+                if($playerDistance < $lastPlayerDistance) {
+                    $closest = [$px, $pz, $player];
+                }
+            } else {
+                $closest = [$px, $pz, $player];
+            }
+        }
+        return $closest[2];
+    }
+	
     public function removeKing() : void{
         if($this->king === null) return;
         $this->broadcastMessage(str_replace("{PLAYER}", $this->king, $this->plugin->utils->colourise($this->plugin->messages["broadcasts"]["fallen_king"])));
@@ -559,7 +593,7 @@ class Arena{
         if(count($this->playersInBox()) === 0){
             return false;
         } else {
-            $player = $this->playersInBox()[array_rand($this->playersInBox())]; //todo closest to middle, Beta4
+            $player = $this->getClosestToMid();
             $this->broadcastMessage(str_replace("{PLAYER}", $player, $this->plugin->utils->colourise($this->plugin->messages["broadcasts"]["new_king"])));
             $this->king = $player;
             $this->updateKingTextParticle();
